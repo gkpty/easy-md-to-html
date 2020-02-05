@@ -4,6 +4,8 @@ function readDocs(file){
   fs.readFile(file, 'utf8', function(err, data){
     let newData = ""
     let codeblock = false;
+    let orderedlist = false;
+    let unorderedlist = false;
     data = data.split(/(\r\n|\n|\r)/gm)
     //let currentsection = ""
     for(item of data){
@@ -17,11 +19,26 @@ function readDocs(file){
           codeblock = true;
         }
       }
+      else if(item.startsWith("- ")){
+        if(unorderedlist){
+          item = item.replace("- ", '<li>') + '</li>';
+        }
+        else{
+          item = '<ul>' + item.replace("- ", '<li>') + '</li>';
+          unorderedlist = true;
+        }
+      }
       else{
         if(codeblock){
           if(item !== '\n'){
             item = '</pre></code>' + item;
             codeblock = false;
+          }
+        }
+        else if(unorderedlist){
+          if(item !== '\n'){
+            item = '</ul>' + item;
+            unorderedlist = false;
           }
         }
         if(!codeblock && item.includes('\n')){
@@ -45,19 +62,7 @@ function readDocs(file){
           item = replacelinks(item)
         }
         //replace code
-        if(item.includes('`')){
-          if(item.split('`').length >= 3){
-            let itemarr = item.split('`')
-            let newItem = itemarr[0]
-            for(let i=1; i<itemarr.length; i++){
-              if(i%2 !== 0){
-                newItem += `<code>${itemarr[i]}</code>`
-              }
-              else newItem += itemarr[i]
-            }
-            item = newItem
-          }
-        }
+        item = replaceCode(item)
       }
       //replace images
       //replace lists
@@ -88,6 +93,27 @@ function replacelinks(text){
     }
   }
   return text
+}
+
+function replaceCode(text){
+  if(text.includes('`')){
+    if(text.split('`').length >= 3){
+      let textarr = text.split('`')
+      let newText = textarr[0]
+      for(let i=1; i<textarr.length; i++){
+        if(i%2 !== 0){
+          newText += `<code>${textarr[i]}</code>`
+        }
+        else newText += textarr[i]
+      }
+      text = newText
+      return text;
+    }
+  }
+}
+
+function replaceUnorederedLists(item){
+
 }
 
 readDocs('docs.md')
