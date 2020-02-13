@@ -1,112 +1,115 @@
 var fs = require("fs");
 
-function mdToHtml(md){
-  fs.readFile(file, 'utf8', function(err, data){
-    let html = ""
-    let codeblock = false;
-    let orderedlist = false;
-    let unorderedlist = false;
-    let mdarr = md.split(/(\r\n|\n|\r)/gm)
-    let currentsection = ""
-    Object.keys(mdarr).map(function(item, index){
-      //replace codeblocks
-      if(item.startsWith("    ")){
-        if(codeblock){
-          item = item.replace("    ", "")
+module.exports = function mdToHtml(md, callback){
+  let html = ""
+  let codeblock = false;
+  let orderedlist = false;
+  let unorderedlist = false;
+  let mdarr = md.split(/(\r\n|\n|\r)/gm)
+  let currentsection = ""
+  Object.keys(mdarr).map(function(item, index){
+    //replace codeblocks
+    if(item.startsWith("    ")){
+      if(codeblock){
+        item = item.replace("    ", "")
+      }
+      else{
+        item = '<pre><code>' + item.replace("    ", "")
+        codeblock = true;
+      }
+    }
+    else{
+      //check if its the end of a codeblock
+      if(codeblock){
+        if(item !== '\n'){
+          item = '</pre></code>' + item;
+          codeblock = false;
+        }
+      }
+      //replace unordered lists
+      if(item.startsWith("- ")){
+        if(unorderedlist){
+          item = item.replace("- ", '<li>') + '</li>';
         }
         else{
-          item = '<pre><code>' + item.replace("    ", "")
-          codeblock = true;
+          item = '<ul>' + item.replace("- ", '<li>') + '</li>';
+          unorderedlist = true;
+        }
+      }
+      //replace ordered lists
+      else if(item.startsWith(/[0-9]/ + '.')){
+        if(unorderedlist){
+          //replace the first two characters
+          item = item.replace(/[0-9]/ + '.', '<li>') + '</li>';
+        }
+        else{
+          //replace the first two characters
+          item = '<ol>' + item.replace(/[0-9]/ + '.', '<li>') + '</li>';
+          unorderedlist = true;
         }
       }
       else{
-        //check if its the end of a codeblock
-        if(codeblock){
+        //check if its the end of unordered list
+        if(unorderedlist){
           if(item !== '\n'){
-            item = '</pre></code>' + item;
-            codeblock = false;
+            item = '</ul>' + item;
+            unorderedlist = false;
           }
         }
-        //replace unordered lists
-        if(item.startsWith("- ")){
-          if(unorderedlist){
-            item = item.replace("- ", '<li>') + '</li>';
-          }
-          else{
-            item = '<ul>' + item.replace("- ", '<li>') + '</li>';
-            unorderedlist = true;
+        //check if its the end of ordered list
+        else if(orderedlist){
+          if(item !== '\n'){
+            item = '</ol>' + item;
+            orderedlist = false;
           }
         }
-        //replace ordered lists
-        if(item.startsWith(/[0-9]/ + '.')){
-          if(unorderedlist){
-            //replace the first two characters
-            item = item.replace(/[0-9]/ + '.', '<li>') + '</li>';
-          }
-          else{
-            //replace the first two characters
-            item = '<ol>' + item.replace(/[0-9]/ + '.', '<li>') + '</li>';
-            unorderedlist = true;
-          }
+        //replace newlines with breaks
+        if(!codeblock && item.includes('\n')){
+          item = item.replace('\n', '<br>')
         }
-        else{
-          //check if its the end of unordered list
-          if(unorderedlist){
-            if(item !== '\n'){
-              item = '</ul>' + item;
-              unorderedlist = false;
-            }
-          }
-          //check if its the end of ordered list
-          else if(orderedlist){
-            if(item !== '\n'){
-              item = '</ol>' + item;
-              orderedlist = false;
-            }
-          }
-          //replace newlines with breaks
-          if(!codeblock && item.includes('\n')){
-            item = item.replace('\n', '<br>')
-          }
-          //replace title
-          if(item.startsWith('# ')){
-            item = item.replace('# ', `<h1>`) + '</h1>';
-            let id = text.substr(0, 12).replace(/\s/g, '_').replace(`'`, '_').replace(',', '_').replace("(","").replace(")", '_') + index
-            //add section
-            //currentsection = section
-          }
-          //replace subtitle
-          else if(item.startsWith('## ')){
-            let id = text.substr(0, 12).replace(/\s/g, '_').replace(`'`, '_').replace(',', '_').replace("(","").replace(")", '_') + index
-            item = item.replace('## ', `<h2>`) + '</h2>';
-            //add id of subsection
-            //add subsection
-          }
-          //replace pargraphs
-          //else if starts with alphabetic
+        //replace title
+        if(item.startsWith('# ')){
+          item = item.replace('# ', `<h1>`) + '</h1>';
+          let id = text.substr(2, 14).replace(/\s/g, '_').replace(`'`, '_').replace(',', '_').replace("(","").replace(")", '_') + index
+          AddSection(id, text.substr(2, text.length), function(err, data){
+            if(err) throw new Error(err)
+            else currentsection = id;
+          })
         }
-        //replace links
-        if(item.includes('](')){
-          item = replacelinks(item)
+        //replace subtitle
+        else if(item.startsWith('## ')){
+          let id = text.substr(3, 15).replace(/\s/g, '_').replace(`'`, '_').replace(',', '_').replace("(","").replace(")", '_') + index
+          item = item.replace('## ', `<h2>`) + '</h2>';
+          AddSubsection(currentsection, id, text.substr(3, text.length))
         }
-        //replace images
-        if(item.includes('![')){
-          item = replaceImages(item)
-        }
-        //replace code
-        if(item.includes('`')){
-          item = replaceCodes(item)
-        }
-        //replace bold characters
-        if(item.includes('**')){
-          item = replaceCodes(item)
-        }
-        //replace italics
+        //replace pargraphs
+        /* else if(item.startsWith(/^[a-zA-Z0-9]*$/)){
+          item = '<p>' + item + '</p>';
+        } */
       }
-      html += item;
-    })
-    fs.writeFileSync('docs.html', html);
+      //replace links
+      if(item.includes('](')){
+        item = replacelinks(item)
+      }
+      //replace images
+      if(item.includes('![')){
+        item = replaceImages(item)
+      }
+      //replace inline code
+      if(item.includes('`')){
+        item = replaceCodes(item)
+      }
+      //replace bold characters
+      if(item.includes('**')){
+        item = replaceBolds(item)
+      }
+      //replace italics
+    }
+    console.log(mdarr[item])
+    html += mdarr[item];
   })
+  if(callback && typeof callback === 'function') callback(null, html)
+  else return html;
 }
 
 function replacelinks(text){
@@ -185,4 +188,23 @@ function replaceBolds(text){
   }
 }
 
-mdToHtml('docs.arr')
+function AddSection(id, text, callback){
+  let rawdata = fs.readFileSync(`docs.json`);  
+  obj = JSON.parse(rawdata);
+  let sections = obj.sections;
+  sections[id] = {"text":text, "subsections":{}}
+  jsonString = JSON.stringify(obj);
+  fs.writeFileSync(`docs.json`, jsonString);
+  if(callback && typeof callback === 'function') callback(null, 'Success');
+  else return 'Success';
+}
+
+function AddSubsection(section, id, text, callback){
+  let rawdata = fs.readFileSync(`docs.json`);  
+  obj = JSON.parse(rawdata);
+  let subsections = obj.sections[section].subsections;
+  subsections[id] = text;
+  jsonString = JSON.stringify(obj);
+  fs.writeFileSync(`docs.json`, jsonString);
+  return 'Success';
+}
