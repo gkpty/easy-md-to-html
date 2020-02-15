@@ -4,116 +4,124 @@ module.exports = function mdToHtml(md, callback){
   let html = ""
   let codeblock = false;
   let orderedlist = false;
+  let orderedsublist = false;
   let unorderedlist = false;
   let mdarr = md.split(/(\r\n|\n|\r)/gm)
-  let currentsection = ""
-  Object.keys(mdarr).map(function(item, index){
+  let currentsection = "";
+  for(let i=0; i<mdarr.length; i++){
     //replace codeblocks
-    if(item.startsWith("    ")){
+    if(mdarr[i].startsWith("    ") && !(/^[0-9]/.test(mdarr[i].trim()))){
       if(codeblock){
-        item = item.replace("    ", "")
+        mdarr[i] = mdarr[i].replace("    ", "")
       }
       else{
-        item = '<pre><code>' + item.replace("    ", "")
+        mdarr[i] = '<pre><code>' + mdarr[i].replace("    ", "")
         codeblock = true;
       }
     }
     else{
       //check if its the end of a codeblock
       if(codeblock){
-        if(item !== '\n'){
-          item = '</pre></code>' + item;
+        if(mdarr[i] !== '\n'){
+          mdarr[i] = '</pre></code>' + mdarr[i];
           codeblock = false;
         }
       }
       //replace unordered lists
-      if(item.startsWith("- ")){
+      if(mdarr[i].startsWith("- ")){
         if(unorderedlist){
-          item = item.replace("- ", '<li>') + '</li>';
+          mdarr[i] = mdarr[i].replace("- ", '<li>') + '</li>';
         }
         else{
-          item = '<ul>' + item.replace("- ", '<li>') + '</li>';
+          mdarr[i] = '<ul>' + mdarr[i].replace("- ", '<li>') + '</li>';
           unorderedlist = true;
         }
       }
       //replace ordered lists
-      else if(item.startsWith(/[0-9]/ + '.')){
-        if(unorderedlist){
-          //replace the first two characters
-          item = item.replace(/[0-9]/ + '.', '<li>') + '</li>';
-        }
-        else{
-          //replace the first two characters
-          item = '<ol>' + item.replace(/[0-9]/ + '.', '<li>') + '</li>';
-          unorderedlist = true;
+      else if(/^[0-9]/.test(mdarr[i].trim())){
+        //console.log(mdarr[i])
+        if(mdarr[i].substr(0, 5).includes(". ")){
+          //console.log('list', mdarr[i])
+          if(orderedlist){
+            //replace the first two characters
+            mdarr[i] = '<li>' + mdarr[i].split(". ", 2)[1] + '</li>';
+          }
+          else{
+            //replace the first two characters
+            mdarr[i] = '<ol><li>' + mdarr[i].split(". ", 2)[1] + '</li>';
+            orderedlist = true;
+          }
         }
       }
       else{
         //check if its the end of unordered list
         if(unorderedlist){
-          if(item !== '\n'){
-            item = '</ul>' + item;
+          if(mdarr[i] !== '\n'){
+            mdarr[i] = '</ul>' + mdarr[i];
             unorderedlist = false;
           }
         }
         //check if its the end of ordered list
         else if(orderedlist){
-          if(item !== '\n'){
-            item = '</ol>' + item;
+          if(mdarr[i] !== '\n'){
+            mdarr[i] = '</ol>' + mdarr[i];
             orderedlist = false;
           }
         }
         //replace newlines with breaks
-        if(!codeblock && item.includes('\n')){
-          item = item.replace('\n', '<br>')
+        if(!codeblock && mdarr[i].includes('\n')){
+          mdarr[i] = mdarr[i].replace('\n', '<br>')
         }
         //replace title
-        if(item.startsWith('# ')){
-          item = item.replace('# ', `<h1>`) + '</h1>';
-          let id = text.substr(2, 14).replace(/\s/g, '_').replace(`'`, '_').replace(',', '_').replace("(","").replace(")", '_') + index
-          AddSection(id, text.substr(2, text.length), function(err, data){
+        if(mdarr[i].startsWith('# ')){
+          let id = mdarr[i].substr(2, 14).replace(/\s/g, '_').replace(`'`, '_').replace(',', '_').replace("(","").replace(")", '_') + i;
+          AddSection(id, mdarr[i].substr(2, mdarr[i].length), function(err, data){
             if(err) throw new Error(err)
-            else currentsection = id;
+            else {
+              currentsection = id;
+              mdarr[i] = mdarr[i].replace('# ', `<h1>`) + '</h1>';
+            }
           })
         }
         //replace subtitle
-        else if(item.startsWith('## ')){
-          let id = text.substr(3, 15).replace(/\s/g, '_').replace(`'`, '_').replace(',', '_').replace("(","").replace(")", '_') + index
-          item = item.replace('## ', `<h2>`) + '</h2>';
-          AddSubsection(currentsection, id, text.substr(3, text.length))
+        else if(mdarr[i].startsWith('## ')){
+          let id = mdarr[i].substr(3, 15).replace(/\s/g, '_').replace(`'`, '_').replace(',', '_').replace("(","").replace(")", '_') + i;
+          AddSubsection(currentsection, id, mdarr[i].substr(3, mdarr[i].length));
+          mdarr[i] = mdarr[i].replace('## ', `<h2>`) + '</h2>';
         }
         //replace pargraphs
-        /* else if(item.startsWith(/^[a-zA-Z0-9]*$/)){
-          item = '<p>' + item + '</p>';
+        /* else if(mdarr[i].startsWith(/^[a-zA-Z0-9]*$/)){
+          mdarr[i] = '<p>' + mdarr[i] + '</p>';
         } */
       }
-      //replace links
-      if(item.includes('](')){
-        item = replacelinks(item)
+      //replace bold characters
+      if(mdarr[i].includes('**')){
+        //console.log('bold', mdarr[i])
+        mdarr[i] = replaceBolds(mdarr[i])
       }
       //replace images
-      if(item.includes('![')){
-        item = replaceImages(item)
+      if(mdarr[i].includes('![')){
+        mdarr[i] = replaceImages(mdarr[i])
+      }
+      //replace links
+      if(mdarr[i].includes('](')){
+        mdarr[i] = replacelinks(mdarr[i])
       }
       //replace inline code
-      if(item.includes('`')){
-        item = replaceCodes(item)
+      if(mdarr[i].includes('`')){
+        mdarr[i] = replaceCodes(mdarr[i])
       }
-      //replace bold characters
-      if(item.includes('**')){
-        item = replaceBolds(item)
-      }
+ 
       //replace italics
     }
-    console.log(mdarr[item])
-    html += mdarr[item];
-  })
+    html += mdarr[i];
+  }
   if(callback && typeof callback === 'function') callback(null, html)
   else return html;
 }
 
 function replacelinks(text){
-  let linkarr = item.split('](')
+  let linkarr = text.split('](')
   let linkname = null;
   let linkpath = null;
   for(link of linkarr){
@@ -136,7 +144,7 @@ function replacelinks(text){
 }
 
 function replaceImages(text){
-  let imgarr = item.split('](')
+  let imgarr = text.split('](')
   let imgname = null;
   let imgpath = null;
   for(img of imgarr){
