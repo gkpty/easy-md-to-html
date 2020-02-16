@@ -3,14 +3,24 @@ var fs = require("fs");
 module.exports = function mdToHtml(md, callback){
   let html = ""
   let codeblock = false;
+  let quotedcodeblock = false;
   let orderedlist = false;
-  let orderedsublist = false;
   let unorderedlist = false;
   let mdarr = md.split(/(\r\n|\n|\r)/gm)
   let currentsection = "";
   for(let i=0; i<mdarr.length; i++){
+    if(mdarr[i].startsWith("```")){
+      if(!quotedcodeblock){
+        mdarr[i] = '<pre><code>';
+        quotedcodeblock = true;
+      }
+      else{
+        mdarr[i] = '</pre></code>';
+        quotedcodeblock = false;
+      }
+    }
     //replace codeblocks
-    if(mdarr[i].startsWith("    ") && !(/^[0-9]/.test(mdarr[i].trim()))){
+    if(mdarr[i].startsWith("    ") && !(/^[0-9]/.test(mdarr[i].trim())) && !quotedcodeblock){
       if(codeblock){
         mdarr[i] = mdarr[i].replace("    ", "")
       }
