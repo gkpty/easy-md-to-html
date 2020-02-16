@@ -70,7 +70,7 @@ module.exports = function mdToHtml(md, callback){
         }
         //replace newlines with breaks
         if(!codeblock && mdarr[i].includes('\n')){
-          mdarr[i] = mdarr[i].replace('\n', '<br>')
+          mdarr[i] = mdarr[i].replace('\n', '')
         }
         //replace title
         if(mdarr[i].startsWith('# ')){
@@ -90,9 +90,9 @@ module.exports = function mdToHtml(md, callback){
           mdarr[i] = mdarr[i].replace('## ', `<h2>`) + '</h2>';
         }
         //replace pargraphs
-        /* else if(mdarr[i].startsWith(/^[a-zA-Z0-9]*$/)){
+        else if(/^[a-zA-Z0-9]/.test(mdarr[i])){
           mdarr[i] = '<p>' + mdarr[i] + '</p>';
-        } */
+        }
       }
       //replace bold characters
       if(mdarr[i].includes('**')){
@@ -136,7 +136,7 @@ function replacelinks(text){
     }
     if(linkpath && linkname){
       let arrlink = `[${linkname}](${linkpath})`;
-      let htmlink = `<a src='${linkpath}'>${linkname}</a>`;
+      let htmlink = `<a href='${linkpath}'>${linkname}</a>`;
       text = text.replace(arrlink, htmlink);
     }
   }
