@@ -5,10 +5,12 @@ module.exports = function mdToHtml(md, callback){
   let codeblock = false;
   let quotedcodeblock = false;
   let orderedlist = false;
+  let orderedsublist = false;
   let unorderedlist = false;
   let mdarr = md.split(/(\r\n|\n|\r)/gm)
   let currentsection = "";
   for(let i=0; i<mdarr.length; i++){
+    //replace code blocks with ```
     if(mdarr[i].startsWith("```")){
       if(!quotedcodeblock){
         mdarr[i] = '<pre><code>';
@@ -19,8 +21,8 @@ module.exports = function mdToHtml(md, callback){
         quotedcodeblock = false;
       }
     }
-    //replace codeblocks
-    if(mdarr[i].startsWith("    ") && !(/^[0-9]/.test(mdarr[i].trim())) && !quotedcodeblock){
+    //replace codeblocks with tabs
+    else if(mdarr[i].startsWith("    ") && !(/^[0-9]/.test(mdarr[i].trim())) && !quotedcodeblock){
       if(codeblock){
         mdarr[i] = mdarr[i].replace("    ", "")
       }
@@ -49,12 +51,24 @@ module.exports = function mdToHtml(md, callback){
       }
       //replace ordered lists
       else if(/^[0-9]/.test(mdarr[i].trim())){
-        //console.log(mdarr[i])
-        if(mdarr[i].substr(0, 5).includes(". ")){
-          //console.log('list', mdarr[i])
+        if(mdarr[i].trim().substr(0, 5).includes(". ")){
           if(orderedlist){
             //replace the first two characters
-            mdarr[i] = '<li>' + mdarr[i].split(". ", 2)[1] + '</li>';
+            if(mdarr[i].startsWith("    ")){
+              console.log(mdarr[i])
+              mdarr[i] = '<li>' + mdarr[i].split(". ", 2)[1] + '</li>';
+              if(!orderedsublist){
+                orderedsublist = true
+                mdarr[i]=  '<ol>' + mdarr[i];
+              }
+            }
+            else{
+              mdarr[i] = '<li>' + mdarr[i].split(". ", 2)[1] + '</li>';
+              if(orderedsublist){
+                orderedsublist = false;
+                mdarr[i] = '</ol>' + mdarr[i];
+              }
+            }
           }
           else{
             //replace the first two characters
@@ -76,11 +90,17 @@ module.exports = function mdToHtml(md, callback){
           if(mdarr[i] !== '\n'){
             mdarr[i] = '</ol>' + mdarr[i];
             orderedlist = false;
+            if(orderedsublist){
+              orderedsublist = false;
+              mdarr[i] = '</ol></ol>' + mdarr[i];
+            }
           }
         }
         //replace newlines with breaks
-        if(!codeblock && mdarr[i].includes('\n')){
-          mdarr[i] = mdarr[i].replace('\n', '')
+        if(mdarr[i].includes('\n')){
+          if(!codeblock && !quotedcodeblock){
+            mdarr[i] = mdarr[i].replace('\n', '')
+          }
         }
         //replace title
         if(mdarr[i].startsWith('# ')){

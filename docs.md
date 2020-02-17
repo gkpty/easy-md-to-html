@@ -754,8 +754,7 @@ If your forms arent being submitted you can these steps to troubleshoot:
 1. Validate your cloud formation template you can use the template command with the --validate flag or the -v shortcut.
 2. Test your lambda function in the AWS console by using the test feature
 3. Test your API gateway endpoint in the AWS console by using the test feature.
-3. Test the API by using curl
-    curl -d '{"id":"", "firstName":"john","lastName":"doe", "email":"johndoe@email.com", "message":"hello world"}' -H 'Content-Type: application/json' https://your-api-url
+3. Test the API by using curl `curl -d '{"id":"", "firstName":"john","lastName":"doe", "email":"johndoe@email.com", "message":"hello world"}' -H 'Content-Type: application/json' https://your-api-url`
 4. Test your API from an external form: insure that CORS is properly enabled in your API
 5. generate a form for your API and try submitting. check out the console in google chrome for any errors.
 
