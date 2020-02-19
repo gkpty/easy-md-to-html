@@ -1,11 +1,11 @@
 var fs = require("fs");
+var listlevel = 0;
 
 module.exports = function mdToHtml(md, callback){
   let html = ""
   let codeblock = false;
   let quotedcodeblock = false;
   let orderedlist = false;
-  let orderedsublist = false;
   let unorderedlist = false;
   let mdarr = md.split(/(\r\n|\n|\r)/gm)
   let currentsection = "";
@@ -54,21 +54,7 @@ module.exports = function mdToHtml(md, callback){
         if(mdarr[i].trim().substr(0, 5).includes(". ")){
           if(orderedlist){
             //replace the first two characters
-            if(mdarr[i].startsWith("    ")){
-              console.log(mdarr[i])
-              mdarr[i] = '<li>' + mdarr[i].split(". ", 2)[1] + '</li>';
-              if(!orderedsublist){
-                orderedsublist = true
-                mdarr[i]=  '<ol>' + mdarr[i];
-              }
-            }
-            else{
-              mdarr[i] = '<li>' + mdarr[i].split(". ", 2)[1] + '</li>';
-              if(orderedsublist){
-                orderedsublist = false;
-                mdarr[i] = '</ol>' + mdarr[i];
-              }
-            }
+            mdarr[i] = nestedList(mdarr[i])
           }
           else{
             //replace the first two characters
@@ -88,12 +74,8 @@ module.exports = function mdToHtml(md, callback){
         //check if its the end of ordered list
         else if(orderedlist){
           if(mdarr[i] !== '\n'){
-            mdarr[i] = '</ol>' + mdarr[i];
+            mdarr[i] = '</ol>' + '</ol>'.repeat(listlevel) + mdarr[i];
             orderedlist = false;
-            if(orderedsublist){
-              orderedsublist = false;
-              mdarr[i] = '</ol></ol>' + mdarr[i];
-            }
           }
         }
         //replace newlines with breaks
@@ -148,6 +130,26 @@ module.exports = function mdToHtml(md, callback){
   }
   if(callback && typeof callback === 'function') callback(null, html)
   else return html;
+}
+
+function nestedList(text){
+  let tab = "    ";
+  let level = listlevel + 1
+  if(text.startsWith(tab.repeat(level))){
+    //console.log(text)
+    text = '<ol><li>' + text.split(". ", 2)[1] + '</li>';
+    listlevel = level;
+    return text;
+  }
+  else {
+    for(let i=listlevel; i >= 0; i--){
+      if(text.startsWith(tab.repeat(i))){
+        text = '</ol>'.repeat(listlevel-i) + '<li>' + text.split(". ", 2)[1] + '</li>';
+        listlevel = i;
+        return text;
+      }
+    }
+  }
 }
 
 function replacelinks(text){
