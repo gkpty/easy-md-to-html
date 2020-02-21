@@ -1,6 +1,5 @@
 var fs = require("fs");
-var {initBuild} = require('./build')
-var mdToHtml = require('./MdToHtml')
+var mdToHtml = require('./index')
 
 function createDocs(){
   //create the config file if it doesnt 
@@ -19,6 +18,5 @@ function createDocs(){
   })
   
 }
-
 
 createDocs()

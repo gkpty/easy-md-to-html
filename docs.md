@@ -2,7 +2,7 @@
 
 ## What is super easy forms?
 
-Its a modular, open source tool that generates serverless web forms (front-end and back-end) in seconds. It leverages [CloudFormation](https://aws.amazon.com/cloudformation/) templates to create all of your necessary resources in the AWS cloud including a A Dynamo DB table, an API Gateway endpoint, and a lambda function. It also automatically generates a ready-to-go html contact form that you can copy-paste into your site. the tool is fast, easy to use/integrate,  and completely free as all the AWS resources created have a [free tier](https://aws.amazon.com/free/). Version 2.0 now features increased usability, security, and flexibility.
+Its a modular, open source tool that generates serverless web forms (front-end and back-end) in seconds. It leverages [CloudFormation](https://aws.amazon.com/cloudformation/) templates to create all of your necessary resources in the AWS cloud including a A Dynamo DB table, an API Gateway endpoint, and a lambda function. It also automatically generates a ready-to-go html *contact form* that you can copy-paste into your site. the tool is fast, easy to use/integrate,  and completely free as all the AWS resources created have a [free tier](https://aws.amazon.com/free/). Version 2.0 now features increased usability, security, and flexibility.
 
 
 ## Background

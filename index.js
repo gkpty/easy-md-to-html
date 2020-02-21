@@ -1,12 +1,14 @@
 var fs = require("fs");
-var listlevel = 0;
 
 module.exports = function mdToHtml(md, callback){
   let html = ""
   let codeblock = false;
   let quotedcodeblock = false;
   let orderedlist = false;
+  let orderedlistLevel = 0;
   let unorderedlist = false;
+  let unorderedlistLevel = 0;
+  //split the markdown file at the end of every line
   let mdarr = md.split(/(\r\n|\n|\r)/gm)
   let currentsection = "";
   for(let i=0; i<mdarr.length; i++){
@@ -31,18 +33,21 @@ module.exports = function mdToHtml(md, callback){
         codeblock = true;
       }
     }
+    //if its not a codeblock
     else{
-      //check if its the end of a codeblock
+      //check if its the line after a codeblock
       if(codeblock){
         if(mdarr[i] !== '\n'){
-          mdarr[i] = '</pre></code>' + mdarr[i];
+          mdarr[i] = '</pre></code>' + mdarr[i]
           codeblock = false;
         }
       }
       //replace unordered lists
-      if(mdarr[i].startsWith("- ")){
+      if(mdarr[i].trim().startsWith("- ")){
         if(unorderedlist){
-          mdarr[i] = mdarr[i].replace("- ", '<li>') + '</li>';
+          let response = nestedList(mdarr[i], unorderedlistLevel, false)
+          mdarr[i] = response.text
+          unorderedlistLevel = response.level
         }
         else{
           mdarr[i] = '<ul>' + mdarr[i].replace("- ", '<li>') + '</li>';
@@ -50,31 +55,30 @@ module.exports = function mdToHtml(md, callback){
         }
       }
       //replace ordered lists
-      else if(/^[0-9]/.test(mdarr[i].trim())){
-        if(mdarr[i].trim().substr(0, 5).includes(". ")){
-          if(orderedlist){
-            //replace the first two characters
-            mdarr[i] = nestedList(mdarr[i])
-          }
-          else{
-            //replace the first two characters
-            mdarr[i] = '<ol><li>' + mdarr[i].split(". ", 2)[1] + '</li>';
-            orderedlist = true;
-          }
+      else if(/^[0-9]/.test(mdarr[i].trim()) && mdarr[i].trim().substr(0, 5).includes(". ")){
+        if(orderedlist){
+          let response = nestedList(mdarr[i], orderedlistLevel, true)
+          mdarr[i] = response.text
+          orderedlistLevel = response.level
+        }
+        else{
+          //replace the first two characters
+          mdarr[i] = '<ol><li>' + mdarr[i].split(". ", 2)[1] + '</li>';
+          orderedlist = true;
         }
       }
       else{
         //check if its the end of unordered list
         if(unorderedlist){
           if(mdarr[i] !== '\n'){
-            mdarr[i] = '</ul>' + mdarr[i];
+            mdarr[i] = '</ul>' + '</ul>'.repeat(unorderedlistLevel) + mdarr[i];
             unorderedlist = false;
           }
         }
         //check if its the end of ordered list
         else if(orderedlist){
           if(mdarr[i] !== '\n'){
-            mdarr[i] = '</ol>' + '</ol>'.repeat(listlevel) + mdarr[i];
+            mdarr[i] = '</ol>' + '</ol>'.repeat(orderedlistLevel) + mdarr[i];
             orderedlist = false;
           }
         }
@@ -123,8 +127,11 @@ module.exports = function mdToHtml(md, callback){
       if(mdarr[i].includes('`')){
         mdarr[i] = replaceCodes(mdarr[i])
       }
- 
       //replace italics
+      if(mdarr[i].includes('*')){
+        //console.log('bold', mdarr[i])
+        mdarr[i] = replaceItalics(mdarr[i])
+      }
     }
     html += mdarr[i];
   }
@@ -132,21 +139,24 @@ module.exports = function mdToHtml(md, callback){
   else return html;
 }
 
-function nestedList(text){
+function nestedList(text, listLevel, ordered){
   let tab = "    ";
-  let level = listlevel + 1
+  let delim = "- "
+  let level = listLevel + 1
+  let tag = {start:"<ul>", end:"</ul>"}
+  if(ordered){
+    tag = {start:"<ol>", end:"</ol>"}
+    delim = ". "
+  }
   if(text.startsWith(tab.repeat(level))){
-    //console.log(text)
-    text = '<ol><li>' + text.split(". ", 2)[1] + '</li>';
-    listlevel = level;
-    return text;
+    text = tag.start + '<li>' + text.split(delim, 2)[1] + '</li>';
+    return {text:text, level:level};
   }
   else {
-    for(let i=listlevel; i >= 0; i--){
+    for(let i=listLevel; i >= 0; i--){
       if(text.startsWith(tab.repeat(i))){
-        text = '</ol>'.repeat(listlevel-i) + '<li>' + text.split(". ", 2)[1] + '</li>';
-        listlevel = i;
-        return text;
+        text = tag.end.repeat(listLevel-i) + '<li>' + text.split(delim, 2)[1] + '</li>';
+        return {text:text, level:i};
       }
     }
   }
@@ -220,6 +230,21 @@ function replaceBolds(text){
     for(let i=1; i<textarr.length; i++){
       if(i%2 !== 0){
         newText += `<strong>${textarr[i]}</strong>`
+      }
+      else newText += textarr[i]
+    }
+    text = newText
+    return text;
+  }
+}
+
+function replaceItalics(text){
+  if(text.split('*').length >= 3){
+    let textarr = text.split('*')
+    let newText = textarr[0]
+    for(let i=1; i<textarr.length; i++){
+      if(i%2 !== 0){
+        newText += `<em>${textarr[i]}</em>`
       }
       else newText += textarr[i]
     }
