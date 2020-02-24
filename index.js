@@ -27,6 +27,7 @@ module.exports = function mdToHtml(md, callback){
     else if(mdarr[i].startsWith("    ") && !(/^[0-9]/.test(mdarr[i].trim())) && !quotedcodeblock){
       if(codeblock){
         mdarr[i] = mdarr[i].replace("    ", "")
+        mdarr[i] = ignoreHtml(mdarr[i])
       }
       else{
         mdarr[i] = '<pre><code>' + mdarr[i].replace("    ", "")
@@ -35,12 +36,16 @@ module.exports = function mdToHtml(md, callback){
     }
     //if its not a codeblock
     else{
-      //check if its the line after a codeblock
+      //check if its the line after a codeblock'
       if(codeblock){
         if(mdarr[i] !== '\n'){
           mdarr[i] = '</pre></code>' + mdarr[i]
           codeblock = false;
         }
+      }
+      //igonre html tags inside quoted codeblocks
+      if(quotedcodeblock){
+        mdarr[i] = ignoreHtml(mdarr[i])
       }
       //replace unordered lists
       if(mdarr[i].trim().startsWith("- ")){
@@ -115,6 +120,10 @@ module.exports = function mdToHtml(md, callback){
         //console.log('bold', mdarr[i])
         mdarr[i] = replaceBolds(mdarr[i])
       }
+      //replace inline code
+      if(mdarr[i].includes('`')){
+        mdarr[i] = replaceCodes(mdarr[i])
+      }
       //replace images
       if(mdarr[i].includes('![')){
         mdarr[i] = replaceImages(mdarr[i])
@@ -122,10 +131,6 @@ module.exports = function mdToHtml(md, callback){
       //replace links
       if(mdarr[i].includes('](')){
         mdarr[i] = replacelinks(mdarr[i])
-      }
-      //replace inline code
-      if(mdarr[i].includes('`')){
-        mdarr[i] = replaceCodes(mdarr[i])
       }
       //replace italics
       if(mdarr[i].includes('*')){
@@ -149,13 +154,13 @@ function nestedList(text, listLevel, ordered){
     delim = ". "
   }
   if(text.startsWith(tab.repeat(level))){
-    text = tag.start + '<li>' + text.split(delim, 2)[1] + '</li>';
+    text = tag.start + '<li>' + text.substr(text.indexOf(delim)+1) + '</li>';
     return {text:text, level:level};
   }
   else {
     for(let i=listLevel; i >= 0; i--){
       if(text.startsWith(tab.repeat(i))){
-        text = tag.end.repeat(listLevel-i) + '<li>' + text.split(delim, 2)[1] + '</li>';
+        text = tag.end.repeat(listLevel-i) + '<li>' + text.substr(text.indexOf(delim)+1) + '</li>';
         return {text:text, level:i};
       }
     }
@@ -214,7 +219,8 @@ function replaceCodes(text){
     let newText = textarr[0]
     for(let i=1; i<textarr.length; i++){
       if(i%2 !== 0){
-        newText += `<code>${textarr[i]}</code>`
+        textarr[i] = ignoreHtml(textarr[i]);
+        newText += `<code>${textarr[i]}</code>`;
       }
       else newText += textarr[i]
     }
@@ -251,6 +257,15 @@ function replaceItalics(text){
     text = newText
     return text;
   }
+}
+
+function ignoreHtml(text){
+  if(text.includes('>') && text.includes('>')){
+    text = text.replace(/</g, '&_').replace(/>/g, '_&');
+    text = text.replace(/&_/g, '<span><</span>').replace(/_&/g, '<span>></span>');
+    return text;
+  }
+  else return text;
 }
 
 function AddSection(id, text, callback){
