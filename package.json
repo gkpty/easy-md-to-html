@@ -1,0 +1,24 @@
+{
+  "name": "easy-md-to-html",
+  "version": "1.0.0",
+  "description": "a simple markdown to html converter with no external dependencies",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gkpty/easy-md-to-html.git"
+  },
+  "keywords": [
+    "markdown",
+    "html",
+    "parser"
+  ],
+  "author": "gkpty",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/gkpty/easy-md-to-html/issues"
+  },
+  "homepage": "https://github.com/gkpty/easy-md-to-html#readme"
+}
