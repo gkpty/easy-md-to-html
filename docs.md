@@ -2,7 +2,7 @@
 
 ## What is super easy forms?
 
-Its a modular, open source tool that generates serverless web forms (front-end and back-end) in seconds. It leverages [CloudFormation](https://aws.amazon.com/cloudformation/) templates to create all of your necessary resources in the AWS cloud including a A Dynamo DB table, an API Gateway endpoint, and a lambda function. It also automatically generates a ready-to-go html *contact form* that you can copy-paste into your site. the tool is fast, easy to use/integrate,  and completely free as all the AWS resources created have a [free tier](https://aws.amazon.com/free/). Version 2.0 now features increased usability, security, and flexibility.
+Its a modular, open source tool that generates serverless web forms (front-end and back-end) in seconds. It leverages [CloudFormation](https://aws.amazon.com/cloudformation/) templates to create all of your necessary resources in the AWS cloud including a A Dynamo DB table, an API Gateway endpoint, and a lambda function. It also automatically generates a ready-to-go html contact form that you can copy-paste into your site. the tool is fast, easy to use/integrate,  and completely free as all the AWS resources created have a [free tier](https://aws.amazon.com/free/). Version 2.0 now features increased usability, security, and flexibility.
 
 
 ## Background
@@ -58,7 +58,6 @@ In the last couple of years the introduction of new cloud services for storage, 
 2. run `sef init formname` replace formname with the name you want to give to your new form. For example the domain name followed by paymentform.
 3. edit the config file saved in `./forms/formname/config.json` and add values for the variables shown bellow following the same format. captcha, emailMessage and emailSubject are optional. 
 4. run `sef fullform formname`
-
 ```
 {
   "email":"your@email.com",
@@ -100,7 +99,7 @@ This creates the back-end and fornt-end for a form called formname. the form wil
 
 Optionally you can provide your desired values directly in the CLI flags without having to edit the config file as shown in the command bellow.
 
-       sef fullform formname --email=your@email.com --fields=fullName=text=required,email=email=required,paymentMethod=select=required=visa/master_card/cash,paymentAmount=number=required --recipients=recipient1@email.com,recipient2@email.com
+      sef fullform formname --email=your@email.com --fields=fullName=text=required,email=email=required,paymentMethod=select=required=visa/master_card/cash,paymentAmount=number=required --recipients=recipient1@email.com,recipient2@email.com
 
 ## Use the API
         const SEF = require('super-easy-forms')
@@ -117,7 +116,7 @@ Optionally you can provide your desired values directly in the CLI flags without
 
 All forms will generate a folder for that form within your project. this folder will contain the forms config.json file which keeps track of all of that form’s variables.
 
-All of the super easy form commands make use of optional arguments and optional callbacks. If a required argument isn't supplied to one of the methods that method will check the form's local config file and use the value stored there. if the argument isn't provided in params and isn't found in the form’s config file it will throw an error.
+All of the super easy form commands make use of optional arguments and optional callbacks. if a required argument isn’t supplied to one of the methods that method will check the form's local config file and use the value stored there. if the argument isn't provided in params and isn't found in the form’s config file it will throw an error.
 
 All methods have the `function(formName, options, callback)` format and all  the callbacks have the `function(err,data)` format.
 
@@ -225,16 +224,16 @@ The form and fullform commands in the CLI use the parseFields method which takes
 
 # Captcha
 
-Super easy forms allows you to easily integrate google's reCAPTCHA into your html forms. Before being able to use captcha in your forms make sure you have signed up for a reCAPTCHA key pair. [sign up for a reCAPTCHA key pair](http://www.google.com/recaptcha/admin/create)
+Super easy forms allows you to easily integrate google's reCAPTCHA service into your html forms. Before being able to use this feature make sure to [sign up for a reCAPTCHA key pair](http://www.google.com/recaptcha/admin/create)
 
 Once you have added a key pair for the correct domain of your respective project, add the following variables in your .env file by running `sudo nano .env` or opening the file in your text editor of choice.
 
-    RECAPCTHA_KEY=your_site_key
-    RECAPTCHA_SECRET=your_site_secret key
+    RECAPTCHA_KEY=your_site_key
+    RECAPTCHA_SECRET=your_site_secret_key
 
 now when you run a command from the CLI make sure to add the —recaptcha flag or -r shortcut. If you are using the API provide the captcha argument of the options param as true. If you are adding CAPTCHA to an already deployed form, make sure to also update your lambda function.
 
-Please be aware that the captcha checkbox will not work unless the request is coming in from the domain you put when requesting your key pair.
+Please be aware that the captcha checkbox will not work unless the request is coming in from the domain you registered when requesting your key pair.
 
 
 # API Glossary
@@ -256,7 +255,7 @@ Please be aware that the captcha checkbox will not work unless the request is co
     3. **returns:** String: the html form as a string
 4. **CreateLambdaFunction(formName, options, callback):** creates a lambda function and saves it as a js file in the form folder
     1. **formName**: String: Required: the name of the form
-    2. **options** = {"email": "", "formFields":"", "recipients":[]}
+    2. **options** = {"email": "", "formFields":"", "recipients":[], "emailMessage":"", "emailSubject":"", "captcha":true|false, "zip":true|false, "functionBucket":true|false}
         1. **email:** String: Required: the email you will use to send submissions
         2. **formFields:** Object: Required: JSON object with the formFields. Check out the form generator section for the correct format.
         3. **recipients:** Array: Optional: an array of emails (strings). one or more recipients are not provided, the value provided for email will be used as the recipient.
@@ -592,158 +591,6 @@ ARGUMENTS
 ```
 
 _See code: [src/commands/variable.js](https://github.com/gkpty/super-easy-forms-cli/blob/v1.0.5/src/commands/variable.js)_
-<!-- commandsstop -->
-* [`sef build`](#sef-build)
-* [`sef email`](#sef-email)
-* [`sef form NAME`](#sef-form-name)
-* [`sef fullform NAME`](#sef-fullform-name)
-* [`sef help [COMMAND]`](#sef-help-command)
-* [`sef lambda NAME`](#sef-lambda-name)
-* [`sef submissions`](#sef-submissions)
-* [`sef template`](#sef-template)
-
-## `sef build`
-
-Builds the required base files and directories.
-
-```
-USAGE
-  $ sef build
-```
-
-_See code: [src/commands/build.js](https://github.com/gkpty/super-easy-forms-cli/blob/v0.0.0/src/commands/build.js)_
-
-## `sef email`
-
-Describe the command here
-
-```
-USAGE
-  $ sef email
-
-OPTIONS
-  -n, --name=name  name to print
-
-DESCRIPTION
-  ...
-  Extra documentation goes here
-```
-
-_See code: [src/commands/email.js](https://github.com/gkpty/super-easy-forms-cli/blob/v0.0.0/src/commands/email.js)_
-
-## `sef form NAME`
-
-Builds an html form
-
-```
-USAGE
-  $ sef form NAME
-
-ARGUMENTS
-  NAME  name of the form - must be unique
-
-OPTIONS
-  -f, --fields=fields  Desired form formFields
-  -l, --labels         Automatically add labels to your form
-  -u, --url=url        The API endpoint endpointUrl for your form
-```
-
-_See code: [src/commands/form.js](https://github.com/gkpty/super-easy-forms-cli/blob/v0.0.0/src/commands/form.js)_
-
-## `sef fullform NAME`
-
-Builds an html form
-
-```
-USAGE
-  $ sef fullform NAME
-
-ARGUMENTS
-  NAME  name of the form - must be unique
-
-OPTIONS
-  -e, --email=email            Desired form formFields
-  -f, --fields=fields          Desired form formFields
-  -l, --labels                 Automatically add labels to your form
-  -r, --recipients=recipients  recipients that will recieve emails on your behalf.
-```
-
-_See code: [src/commands/fullform.js](https://github.com/gkpty/super-easy-forms-cli/blob/v0.0.0/src/commands/fullform.js)_
-
-## `sef help [COMMAND]`
-
-display help for sef
-
-```
-USAGE
-  $ sef help [COMMAND]
-
-ARGUMENTS
-  COMMAND  command to show help for
-
-OPTIONS
-  --all  see all commands in CLI
-```
-
-_See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/v2.2.2/src/commands/help.ts)_
-
-## `sef lambda NAME`
-
-Builds an html form
-
-```
-USAGE
-  $ sef lambda NAME
-
-ARGUMENTS
-  NAME  name of the form - must be unique
-
-OPTIONS
-  -e, --email=email            Email address that will be used to send emails
-  -f, --fields=fields          Desired form formFields
-  -r, --recipients=recipients  Recipients that will recieve emails on your behalf.
-```
-
-_See code: [src/commands/lambda.js](https://github.com/gkpty/super-easy-forms-cli/blob/v0.0.0/src/commands/lambda.js)_
-
-## `sef submissions`
-
-Describe the command here
-
-```
-USAGE
-  $ sef submissions
-
-OPTIONS
-  -n, --name=name  name to print
-
-DESCRIPTION
-  ...
-  Extra documentation goes here
-```
-
-_See code: [src/commands/submissions.js](https://github.com/gkpty/super-easy-forms-cli/blob/v0.0.0/src/commands/submissions.js)_
-
-## `sef template`
-
-Describe the command here
-
-```
-USAGE
-  $ sef template
-
-OPTIONS
-  -n, --name=name  name to print
-
-DESCRIPTION
-  ...
-  Extra documentation goes here
-```
-
-_See code: [src/commands/template.js](https://github.com/gkpty/super-easy-forms-cli/blob/v0.0.0/src/commands/template.js)_
-
-
-
 
 
 # Troubleshooting
@@ -754,7 +601,8 @@ If your forms arent being submitted you can these steps to troubleshoot:
 1. Validate your cloud formation template you can use the template command with the --validate flag or the -v shortcut.
 2. Test your lambda function in the AWS console by using the test feature
 3. Test your API gateway endpoint in the AWS console by using the test feature.
-3. Test the API by using curl `curl -d '{"id":"", "firstName":"john","lastName":"doe", "email":"johndoe@email.com", "message":"hello world"}' -H 'Content-Type: application/json' https://your-api-url`
+3. Test the API by using curl
+    curl -d '{"id":"", "firstName":"john","lastName":"doe", "email":"johndoe@email.com", "message":"hello world"}' -H 'Content-Type: application/json' https://your-api-url
 4. Test your API from an external form: insure that CORS is properly enabled in your API
 5. generate a form for your API and try submitting. check out the console in google chrome for any errors.
 
