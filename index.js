@@ -122,7 +122,9 @@ module.exports = function mdToHtml(md, callback){
       }
       //replace inline code
       if(mdarr[i].includes('`')){
-        mdarr[i] = replaceCodes(mdarr[i])
+        if(mdarr[i].split('`').length >= 3){
+          mdarr[i] = replaceCodes(mdarr[i])
+        }
       }
       //replace images
       if(mdarr[i].includes('![')){
@@ -206,7 +208,7 @@ function replaceImages(text){
     }
     if(imgpath && imgname){
       let arrImg = `![${imgname}](${imgpath})`;
-      let htmImg = `<img src='${imgpath}' alt='${imgname}'>`;
+      let htmImg = `<img src='${imgpath}' alt='${imgname}' class='img-fluid'>`;
       text = text.replace(arrImg, htmImg);
     }
   }
@@ -214,19 +216,17 @@ function replaceImages(text){
 }
 
 function replaceCodes(text){
-  if(text.split('`').length >= 3){
-    let textarr = text.split('`')
-    let newText = textarr[0]
-    for(let i=1; i<textarr.length; i++){
-      if(i%2 !== 0){
-        textarr[i] = ignoreHtml(textarr[i]);
-        newText += `<code>${textarr[i]}</code>`;
-      }
-      else newText += textarr[i]
+  let textarr = text.split('`')
+  let newText = textarr[0]
+  for(let i=1; i<textarr.length; i++){
+    if(i%2 !== 0){
+      textarr[i] = ignoreHtml(textarr[i]);
+      newText += `<code>${textarr[i]}</code>`;
     }
-    text = newText
-    return text;
+    else newText += textarr[i]
   }
+  text = newText
+  return text;
 }
 
 function replaceBolds(text){
