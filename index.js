@@ -47,97 +47,104 @@ module.exports = function mdToHtml(md, callback){
       if(quotedcodeblock){
         mdarr[i] = ignoreHtml(mdarr[i])
       }
+      if(!quotedcodeblock){
       //replace unordered lists
-      if(mdarr[i].trim().startsWith("- ")){
-        if(unorderedlist){
-          let response = nestedList(mdarr[i], unorderedlistLevel, false)
-          mdarr[i] = response.text
-          unorderedlistLevel = response.level
+        if(mdarr[i].trim().startsWith("- ")){
+          if(unorderedlist){
+            let response = nestedList(mdarr[i], unorderedlistLevel, false)
+            mdarr[i] = response.text
+            unorderedlistLevel = response.level
+          }
+          else{
+            mdarr[i] = '<ul>' + mdarr[i].replace("- ", '<li>') + '</li>';
+            unorderedlist = true;
+          }
+        }
+        //replace ordered lists
+        else if(/^[0-9]/.test(mdarr[i].trim()) && mdarr[i].trim().substr(0, 5).includes(". ")){
+          if(orderedlist){
+            let response = nestedList(mdarr[i], orderedlistLevel, true)
+            mdarr[i] = response.text
+            orderedlistLevel = response.level
+          }
+          else{
+            //replace the first two characters
+            mdarr[i] = '<ol><li>' + mdarr[i].split(". ", 2)[1] + '</li>';
+            orderedlist = true;
+          }
         }
         else{
-          mdarr[i] = '<ul>' + mdarr[i].replace("- ", '<li>') + '</li>';
-          unorderedlist = true;
-        }
-      }
-      //replace ordered lists
-      else if(/^[0-9]/.test(mdarr[i].trim()) && mdarr[i].trim().substr(0, 5).includes(". ")){
-        if(orderedlist){
-          let response = nestedList(mdarr[i], orderedlistLevel, true)
-          mdarr[i] = response.text
-          orderedlistLevel = response.level
-        }
-        else{
-          //replace the first two characters
-          mdarr[i] = '<ol><li>' + mdarr[i].split(". ", 2)[1] + '</li>';
-          orderedlist = true;
-        }
-      }
-      else{
-        //check if its the end of unordered list
-        if(unorderedlist){
-          if(mdarr[i] !== '\n'){
-            mdarr[i] = '</ul>' + '</ul>'.repeat(unorderedlistLevel) + mdarr[i];
-            unorderedlist = false;
-          }
-        }
-        //check if its the end of ordered list
-        else if(orderedlist){
-          if(mdarr[i] !== '\n'){
-            mdarr[i] = '</ol>' + '</ol>'.repeat(orderedlistLevel) + mdarr[i];
-            orderedlist = false;
-          }
-        }
-        //replace newlines with breaks
-        if(mdarr[i].includes('\n')){
-          if(!codeblock && !quotedcodeblock){
-            mdarr[i] = mdarr[i].replace('\n', '')
-          }
-        }
-        //replace title
-        if(mdarr[i].startsWith('# ')){
-          let id = mdarr[i].substr(2, 14).replace(/\s/g, '_').replace(`'`, '_').replace(',', '_').replace("(","").replace(")", '_') + i;
-          AddSection(id, mdarr[i].substr(2, mdarr[i].length), function(err, data){
-            if(err) throw new Error(err)
-            else {
-              currentsection = id;
-              mdarr[i] = mdarr[i].replace('# ', `<h1>`) + '</h1>';
+          //check if its the end of unordered list
+          if(unorderedlist){
+            if(mdarr[i] !== '\n'){
+              mdarr[i] = '</ul>' + '</ul>'.repeat(unorderedlistLevel) + mdarr[i];
+              unorderedlist = false;
             }
-          })
+          }
+          //check if its the end of ordered list
+          else if(orderedlist){
+            if(mdarr[i] !== '\n'){
+              mdarr[i] = '</ol>' + '</ol>'.repeat(orderedlistLevel) + mdarr[i];
+              orderedlist = false;
+            }
+          }
+          //replace newlines with breaks
+          if(mdarr[i].includes('\n')){
+            if(!codeblock && !quotedcodeblock){
+              mdarr[i] = mdarr[i].replace('\n', '')
+            }
+          }
+          
+          //replace title
+          if(mdarr[i].startsWith('# ')){
+            let id = mdarr[i].substr(2, 14).replace(/\s/g, '_').replace(`'`, '_').replace(',', '_').replace("(","").replace(")", '_') + i;
+            AddSection(id, mdarr[i].substr(2, mdarr[i].length), function(err, data){
+              if(err) throw new Error(err)
+              else {
+                let section_tag = `<section id="${id}">`;
+                if(currentsection.length > 1){
+                  section_tag = `</section><section id="${id}">`;
+                }
+                currentsection = id;
+                mdarr[i] = section_tag + mdarr[i].replace('# ', `<h1>`) + '</h1>';
+              }
+            })
+          }
+          //replace subtitle
+          else if(mdarr[i].startsWith('## ')){
+            let id = mdarr[i].substr(3, 15).replace(/\s/g, '_').replace(`'`, '_').replace(',', '_').replace("(","").replace(")", '_') + i;
+            AddSubsection(currentsection, id, mdarr[i].substr(3, mdarr[i].length));
+            mdarr[i] = mdarr[i].replace('## ', `<h2 id=${id}>`) + '</h2>';
+          }
+          //replace pargraphs
+          else if(/^[a-zA-Z0-9]/.test(mdarr[i])){
+            mdarr[i] = '<p>' + mdarr[i] + '</p>';
+          }
         }
-        //replace subtitle
-        else if(mdarr[i].startsWith('## ')){
-          let id = mdarr[i].substr(3, 15).replace(/\s/g, '_').replace(`'`, '_').replace(',', '_').replace("(","").replace(")", '_') + i;
-          AddSubsection(currentsection, id, mdarr[i].substr(3, mdarr[i].length));
-          mdarr[i] = mdarr[i].replace('## ', `<h2>`) + '</h2>';
+        //replace bold characters
+        if(mdarr[i].includes('**')){
+          //console.log('bold', mdarr[i])
+          mdarr[i] = replaceBolds(mdarr[i])
         }
-        //replace pargraphs
-        else if(/^[a-zA-Z0-9]/.test(mdarr[i])){
-          mdarr[i] = '<p>' + mdarr[i] + '</p>';
+        //replace inline code
+        if(mdarr[i].includes('`')){
+          if(mdarr[i].split('`').length >= 3){
+            mdarr[i] = replaceCodes(mdarr[i])
+          }
         }
-      }
-      //replace bold characters
-      if(mdarr[i].includes('**')){
-        //console.log('bold', mdarr[i])
-        mdarr[i] = replaceBolds(mdarr[i])
-      }
-      //replace inline code
-      if(mdarr[i].includes('`')){
-        if(mdarr[i].split('`').length >= 3){
-          mdarr[i] = replaceCodes(mdarr[i])
+        //replace images
+        if(mdarr[i].includes('![')){
+          mdarr[i] = replaceImages(mdarr[i])
         }
-      }
-      //replace images
-      if(mdarr[i].includes('![')){
-        mdarr[i] = replaceImages(mdarr[i])
-      }
-      //replace links
-      if(mdarr[i].includes('](')){
-        mdarr[i] = replacelinks(mdarr[i])
-      }
-      //replace italics
-      if(mdarr[i].includes('*')){
-        //console.log('bold', mdarr[i])
-        mdarr[i] = replaceItalics(mdarr[i])
+        //replace links
+        if(mdarr[i].includes('](')){
+          mdarr[i] = replacelinks(mdarr[i])
+        }
+        //replace italics
+        if(mdarr[i].includes('*')){
+          //console.log('bold', mdarr[i])
+          mdarr[i] = replaceItalics(mdarr[i])
+        }
       }
     }
     html += mdarr[i];
