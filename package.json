@@ -1,6 +1,6 @@
 {
   "name": "easy-md-to-html",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "a simple markdown to html converter with no external dependencies",
   "main": "index.js",
   "scripts": {
