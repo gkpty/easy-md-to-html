@@ -7,7 +7,7 @@ function createDocs(){
   fs.readFile('./docs.md', 'utf8', function(err, data){
     if(err) throw new Error(err)
     else{
-      mdToHtml(data, function(err, data){
+      mdToHtml(data, 'docs', function(err, data){
         if(err) console.log(err)
         else {
           fs.writeFileSync('docs.html', data);
