@@ -31,13 +31,14 @@ module.exports = function mdToHtml(md, name, callback){
           }
         }
         //replace codeblocks with tabs
-        else if(mdarr[i].startsWith("    ") && !(/^[0-9]/.test(mdarr[i].trim())) && !quotedcodeblock){
+        else if(mdarr[i].startsWith("    ") && !(/^[\-0-9]/.test(mdarr[i].trim())) && !quotedcodeblock){
           if(codeblock){
             mdarr[i] = mdarr[i].replace("    ", "")
             mdarr[i] = ignoreHtml(mdarr[i])
           }
           else{
-            mdarr[i] = '<pre><code>' + mdarr[i].replace("    ", "")
+            mdarr[i] = mdarr[i].replace("    ", "")
+            mdarr[i] = '<pre><code>' + ignoreHtml(mdarr[i])
             codeblock = true;
           }
         }
