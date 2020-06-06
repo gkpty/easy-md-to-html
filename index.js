@@ -8,6 +8,7 @@ module.exports = function mdToHtml(md, name, callback){
   let orderedlistLevel = 0;
   let unorderedlist = false;
   let unorderedlistLevel = 0;
+  var table = false;
   if(!name || typeof name === 'function'){
     if(typeof name === 'function') callback = name;
     name = 'config';
@@ -22,7 +23,7 @@ module.exports = function mdToHtml(md, name, callback){
         //replace code blocks with ```
         if(mdarr[i].startsWith("```")){
           if(!quotedcodeblock){
-            mdarr[i] = '<pre><code>';
+            mdarr[i] = '<pre class="pre code"><code>';
             quotedcodeblock = true;
           }
           else{
@@ -38,7 +39,7 @@ module.exports = function mdToHtml(md, name, callback){
           }
           else{
             mdarr[i] = mdarr[i].replace("    ", "")
-            mdarr[i] = '<pre><code>' + ignoreHtml(mdarr[i])
+            mdarr[i] = '<pre class="pre code"><code>' + ignoreHtml(mdarr[i])
             codeblock = true;
           }
         }
@@ -81,7 +82,52 @@ module.exports = function mdToHtml(md, name, callback){
                 orderedlist = true;
               }
             }
+            else if(mdarr[i].startsWith('|')){
+              if(table){
+                let tr = '<tr>\n';
+                let cells = mdarr[i].split('|');
+                if(cells[1].trim().split('-').length-1 === cells[1].trim().length) mdarr[i] = "";
+                else {
+                  for(let c=1; c<cells.length-1; c++) tr+= `<td>${cells[c].trim()}</td>`;
+                  mdarr[i]=tr+'</tr>\n';
+                }
+              }
+              else {
+                let tr = '<table>\n<tr>';
+                let cells = mdarr[i].split('|');
+                for(let c=1; c<cells.length-1; c++) tr+= `<th>${cells[c]}</th>`;
+                mdarr[i]=tr+'</tr>\n';
+                table = true;
+              }
+            }
             else{
+              //replace title
+              if(mdarr[i].startsWith('# ')){
+                let id = mdarr[i].substr(2, 14).replace(/\s/g, '_').replace(`'`, '_').replace(',', '_').replace("(","").replace(")", '_') + i;
+                AddSection(name, id, mdarr[i].substr(2, mdarr[i].length), function(err, data){
+                  if(err) throw new Error(err)
+                  else {
+                    let section_tag = `<section id="${id}">`;
+                    if(currentsection.length > 1){
+                      section_tag = `</section>\n<section id="${id}">`;
+                    }
+                    currentsection = id;
+                    mdarr[i] = section_tag + mdarr[i].replace('# ', `<h1>`) + '</h1>';
+                  }
+                })
+              }
+              //replace subtitle
+              else if(mdarr[i].startsWith('## ')){
+                console.log(mdarr[i])
+                let id = mdarr[i].substr(3, 15).replace(/\s/g, '_').replace(`'`, '_').replace(',', '_').replace("(","").replace(")", '_') + i;
+                AddSubsection(name, currentsection, id, mdarr[i].substr(3, mdarr[i].length));
+                mdarr[i] = mdarr[i].replace('## ', `<h2 id=${id}>`) + '</h2>';
+              }
+
+              //replace pargraphs
+              else if(/^[a-zA-Z0-9]/.test(mdarr[i])){
+                mdarr[i] = '<p>' + mdarr[i] + '</p>';
+              }
               //check if its the end of unordered list
               if(unorderedlist){
                 if(mdarr[i] !== '\n'){
@@ -96,36 +142,17 @@ module.exports = function mdToHtml(md, name, callback){
                   orderedlist = false;
                 }
               }
+              else if(table) {
+                if(mdarr[i] !== '\n'){
+                  mdarr[i]='</table>'+mdarr[i].trim()
+                  table = false;
+                }
+              }
               //eliminate newline characters
               if(mdarr[i].includes('\n')){
                 if(!codeblock && !quotedcodeblock){
                   mdarr[i] = mdarr[i].replace('\n', '')
                 }
-              }
-              //replace title
-              if(mdarr[i].startsWith('# ')){
-                let id = mdarr[i].substr(2, 14).replace(/\s/g, '_').replace(`'`, '_').replace(',', '_').replace("(","").replace(")", '_') + i;
-                AddSection(name, id, mdarr[i].substr(2, mdarr[i].length), function(err, data){
-                  if(err) throw new Error(err)
-                  else {
-                    let section_tag = `<section id="${id}">`;
-                    if(currentsection.length > 1){
-                      section_tag = `</section><section id="${id}">`;
-                    }
-                    currentsection = id;
-                    mdarr[i] = section_tag + mdarr[i].replace('# ', `<h1>`) + '</h1>';
-                  }
-                })
-              }
-              //replace subtitle
-              else if(mdarr[i].startsWith('## ')){
-                let id = mdarr[i].substr(3, 15).replace(/\s/g, '_').replace(`'`, '_').replace(',', '_').replace("(","").replace(")", '_') + i;
-                AddSubsection(name, currentsection, id, mdarr[i].substr(3, mdarr[i].length));
-                mdarr[i] = mdarr[i].replace('## ', `<h2 id=${id}>`) + '</h2>';
-              }
-              //replace pargraphs
-              else if(/^[a-zA-Z0-9]/.test(mdarr[i])){
-                mdarr[i] = '<p>' + mdarr[i] + '</p>';
               }
             }
             //replace bold characters
@@ -237,7 +264,7 @@ function replaceCodes(text){
   for(let i=1; i<textarr.length; i++){
     if(i%2 !== 0){
       textarr[i] = ignoreHtml(textarr[i]);
-      newText += `<code>${textarr[i]}</code>`;
+      newText += `<code class="code">${textarr[i]}</code>`;
     }
     else newText += textarr[i]
   }
