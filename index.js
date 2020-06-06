@@ -65,7 +65,7 @@ module.exports = function mdToHtml(md, name, callback){
                 unorderedlistLevel = response.level
               }
               else{
-                mdarr[i] = '<ul>' + mdarr[i].replace("- ", '<li>') + '</li>';
+                mdarr[i] = '<ul><li>' + mdarr[i].split("- ", 2)[1] + '</li>';
                 unorderedlist = true;
               }
             }
