@@ -93,7 +93,7 @@ module.exports = function mdToHtml(md, name, callback){
                 }
               }
               else {
-                let tr = '<table>\n<tr>';
+                let tr = '<table class="table table-hover">\n<tr>';
                 let cells = mdarr[i].split('|');
                 for(let c=1; c<cells.length-1; c++) tr+= `<th>${cells[c]}</th>`;
                 mdarr[i]=tr+'</tr>\n';
